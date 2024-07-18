@@ -14,6 +14,7 @@ let g:clever_f_fix_key_direction       = get(g:, 'clever_f_fix_key_direction', 0
 let g:clever_f_show_prompt             = get(g:, 'clever_f_show_prompt', 0)
 let g:clever_f_smart_case              = get(g:, 'clever_f_smart_case', 0)
 let g:clever_f_chars_match_any_signs   = get(g:, 'clever_f_chars_match_any_signs', '')
+let g:clever_f_additional_signs        = get(g:, 'clever_f_additional_signs', '')
 let g:clever_f_mark_cursor             = get(g:, 'clever_f_mark_cursor', 1)
 let g:clever_f_hide_cursor_on_cmdline  = get(g:, 'clever_f_hide_cursor_on_cmdline', 1)
 let g:clever_f_timeout_ms              = get(g:, 'clever_f_timeout_ms', 0)
@@ -452,15 +453,15 @@ function! s:search(pat, flag) abort
 endfunction
 
 function! s:should_use_migemo(char) abort
-    if !g:clever_f_use_migemo || a:char !~# '^\a$'
+    if !g:clever_f_use_migemo
         return 0
     endif
 
-    if !g:clever_f_across_no_line
-        return 1
+    if !has_key(s:migemo_dicts, &l:encoding)
+        let s:migemo_dicts[&l:encoding] = s:load_migemo_dict()
     endif
-
-    return s:include_multibyte_char(getline('.'))
+    let r = has_key(s:migemo_dicts[&l:encoding], a:char)
+    return r && (!g:clever_f_across_no_line || s:include_multibyte_char(getline('.')))
 endfunction
 
 function! s:load_migemo_dict() abort
@@ -483,12 +484,13 @@ function! s:generate_pattern(map, char_num) abort
 
     let should_use_migemo = s:should_use_migemo(char)
     if should_use_migemo
-        if !has_key(s:migemo_dicts, &l:encoding)
-            let s:migemo_dicts[&l:encoding] = s:load_migemo_dict()
+        if char =~# '^\a$'
+            let regex = s:migemo_dicts[&l:encoding][regex] . '\&\%(' . char . '\|\A\)'
+        else
+            let regex = s:migemo_dicts[&l:encoding][regex]
         endif
-        let regex = s:migemo_dicts[&l:encoding][regex] . '\&\%(' . char . '\|\A\)'
     elseif stridx(g:clever_f_chars_match_any_signs, char) != -1
-        let regex = '\[!"#$%&''()=~|\-^\\@`[\]{};:+*<>,.?_/]'
+        let regex = '\[!"#$%&''()=~|\-^\\@`[\]{};:+*<>,.?_/'.. g:clever_f_additional_signs ..']'
     elseif char ==# '\'
         let regex = '\\'
     endif
