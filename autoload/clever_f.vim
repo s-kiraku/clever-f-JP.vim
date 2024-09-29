@@ -177,7 +177,7 @@ function! clever_f#_mark_direct(forward, count) abort
         let ch_lower = tolower(ch)
 
         let char_count[ch] = get(char_count, ch, 0) + 1
-        if g:clever_f_smart_case && ch =~# '\u'
+        if g:clever_f_smart_case && ch =~# '\u\|[Ａ-Ｚ]'
             " uppercase characters are doubly counted
             let char_count[ch_lower] = get(char_count, ch_lower, 0) + 1
         endif
